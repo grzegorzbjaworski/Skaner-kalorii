@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b5d4d">
+<title>Skaner kalorii</title>
+<style>
+:root{
+  /* ——— zmień te 3 kolory, aby dopasować do Prinzhorn design ——— */
+  --brand:#0e7c66; --brand-d:#0b5d4d; --accent:#0e7c66;
+  --bg:#eef1f2; --card:#ffffff; --ink:#1f2a30; --muted:#6b7a80; --line:#e2e8ea;
+  --ok:#0e7c66; --warn:#b5651d; --err:#c0392b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.45;}
+.wrap{max-width:520px;margin:0 auto;padding:0 14px 40px;}
+header{background:var(--brand-d);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:5;}
+header .brand{font-size:12px;letter-spacing:2px;text-transform:uppercase;opacity:.75;}
+header h1{margin:2px 0 0;font-size:20px;font-weight:700;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:14px;}
+.tot{background:var(--brand-d);color:#fff;border:none;}
+.tot .kcal{font-size:40px;font-weight:800;line-height:1;}
+.tot .kcal small{font-size:15px;font-weight:600;opacity:.8;}
+.tot .macros{display:flex;gap:8px;margin-top:12px;}
+.tot .m{flex:1;background:rgba(255,255,255,.12);border-radius:10px;padding:8px;text-align:center;}
+.tot .m b{display:block;font-size:17px;} .tot .m span{font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:.5px;}
+.bar{height:8px;background:rgba(255,255,255,.2);border-radius:5px;margin-top:12px;overflow:hidden;}
+.bar>i{display:block;height:100%;background:#fff;border-radius:5px;width:0;transition:width .3s;}
+.targetrow{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;opacity:.9;}
+.targetrow input{width:80px;}
+button{font:inherit;cursor:pointer;border:none;border-radius:11px;padding:13px 14px;font-weight:700;}
+.btn{background:var(--brand);color:#fff;width:100%;}
+.btn:active{background:var(--brand-d);}
+.btn.sec{background:#eef4f2;color:var(--brand-d);border:1px solid var(--line);}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:600;}
+.btnrow{display:flex;gap:10px;margin-top:12px;}
+.btnrow>*{flex:1;}
+label{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;}
+input,select{font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;width:100%;background:#fff;color:var(--ink);}
+input:focus,select:focus{outline:2px solid var(--brand);border-color:var(--brand);}
+.man{display:flex;gap:8px;margin-top:8px;}
+.man input{flex:1;}
+.man button{flex:0 0 auto;padding:11px 16px;}
+.hint{font-size:12px;color:var(--muted);margin-top:8px;}
+.result h3{margin:0 0 2px;font-size:18px;}
+.result .brand{color:var(--muted);font-size:13px;margin-bottom:10px;}
+.nutri{display:flex;gap:8px;margin:10px 0;}
+.nutri .n{flex:1;background:#f3f7f6;border-radius:10px;padding:8px;text-align:center;}
+.nutri .n b{display:block;font-size:16px;color:var(--brand-d);} .nutri .n span{font-size:11px;color:var(--muted);}
+.portion{display:flex;align-items:flex-end;gap:10px;margin-top:8px;}
+.portion .f{flex:1;}
+.calc{background:var(--brand-d);color:#fff;border-radius:11px;padding:12px;text-align:center;margin-top:12px;}
+.calc .big{font-size:26px;font-weight:800;}
+.calc .sub{font-size:12px;opacity:.85;margin-top:2px;}
+.list{margin-top:6px;}
+.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);}
+.item:first-child{border-top:none;}
+.item .info{flex:1;min-width:0;}
+.item .info .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.item .info .sub{font-size:12px;color:var(--muted);}
+.item .kc{font-weight:800;color:var(--brand-d);white-space:nowrap;}
+.item .del{background:none;border:none;color:var(--err);font-size:20px;padding:4px 6px;font-weight:700;}
+.empty{color:var(--muted);text-align:center;padding:18px 0;font-size:14px;}
+.msg{padding:10px 12px;border-radius:10px;margin-top:10px;font-size:14px;}
+.msg.e{background:#fdecea;color:var(--err);} .msg.i{background:#eef4f2;color:var(--brand-d);}
+/* camera modal */
+.modal{position:fixed;inset:0;background:#000;z-index:50;display:none;flex-direction:column;}
+.modal.on{display:flex;}
+.modal video{flex:1;width:100%;object-fit:cover;background:#000;}
+.scanline{position:absolute;left:8%;right:8%;top:42%;height:2px;background:#00e28a;box-shadow:0 0 12px #00e28a;}
+.modal .close{position:absolute;top:14px;right:14px;background:rgba(0,0,0,.5);color:#fff;border-radius:50%;width:44px;height:44px;font-size:22px;}
+.modal .lab{position:absolute;bottom:26px;left:0;right:0;text-align:center;color:#fff;font-size:14px;text-shadow:0 1px 3px #000;}
+h2.sec-t{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 4px;}
+footer{text-align:center;color:var(--muted);font-size:11px;margin-top:18px;}
+</style>
+</head>
+<body>
+<header><div class="brand">Prinzhorn · Tool</div><h1>Skaner kalorii</h1></header>
+<div class="wrap">
+
+  <!-- LICZNIK DZIENNY -->
+  <div class="card tot">
+    <div class="kcal"><span id="tKcal">0</span> <small>kcal dziś</small></div>
+    <div class="bar"><i id="tBar"></i></div>
+    <div class="targetrow">Cel dzienny: <input type="number" id="target" inputmode="numeric" placeholder="np. 2300"> kcal</div>
+    <div class="macros">
+      <div class="m"><b id="tB">0 g</b><span>Białko</span></div>
+      <div class="m"><b id="tT">0 g</b><span>Tłuszcz</span></div>
+      <div class="m"><b id="tW">0 g</b><span>Węgl.</span></div>
+    </div>
+  </div>
+
+  <!-- SKANOWANIE -->
+  <div class="card">
+    <h2 class="sec-t">Dodaj produkt</h2>
+    <button class="btn" id="btnCam">📷 Skanuj kamerą</button>
+    <div class="btnrow">
+      <button class="btn sec" id="btnPhoto">🖼️ Zdjęcie kodu</button>
+      <label class="btn sec" style="text-align:center;margin:0;">
+        <input type="file" id="filePhoto" accept="image/*" capture="environment" style="display:none;">Wybierz zdjęcie
+      </label>
+    </div>
+    <div class="man">
+      <input type="text" id="manCode" inputmode="numeric" placeholder="Wpisz kod EAN ręcznie">
+      <button class="btn" id="btnMan">Szukaj</button>
+    </div>
+    <div class="hint">Kamera wymaga HTTPS. iPhone: użyj „Zdjęcie kodu", jeśli podgląd nie startuje.</div>
+    <div id="msg"></div>
+  </div>
+
+  <!-- WYNIK -->
+  <div class="card result" id="result" style="display:none;"></div>
+
+  <!-- DZIENNIK -->
+  <div class="card">
+    <h2 class="sec-t" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Dziś zjedzone</span>
+      <button class="btn ghost" id="btnReset" style="width:auto;padding:6px 10px;font-size:12px;">Wyczyść dzień</button>
+    </h2>
+    <div class="list" id="list"><div class="empty">Jeszcze nic nie dodano.</div></div>
+  </div>
+
+  <footer>Dane odżywcze: Open Food Facts · wartości na 100 g są orientacyjne</footer>
+</div>
+
+<!-- MODAL KAMERY -->
+<div class="modal" id="modal">
+  <video id="video" playsinline autoplay muted></video>
+  <div class="scanline"></div>
+  <button class="close" id="btnClose">✕</button>
+  <div id="camBanner" style="position:absolute;top:0;left:0;right:0;background:#b5651d;color:#fff;padding:10px 14px;font-size:13px;display:none;text-align:center;">
+    Podgląd kamery nie działa w tym oknie. Użyj „Zrób zdjęcie kodu" poniżej.
+  </div>
+  <div style="position:absolute;bottom:22px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:10px;">
+    <div class="lab" style="position:static;">Nakieruj na kod kreskowy</div>
+    <button id="btnCamPhoto" style="background:#fff;color:#0b5d4d;border-radius:11px;padding:12px 18px;font-weight:700;">📷 Zrób zdjęcie kodu</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const todayKey = () => 'cal_log_' + new Date().toISOString().slice(0,10);
+const load = (k,d) => { try{return JSON.parse(localStorage.getItem(k)) ?? d;}catch{return d;} };
+const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+
+let log = load(todayKey(), []);
+let cache = load('cal_products', {});
+let current = null;               // aktualnie znaleziony produkt
+let zxing = null, stream = null, zxScanning = false;
+
+/* ---------- LICZNIK ---------- */
+function renderTotals(){
+  const t = log.reduce((a,x)=>({kcal:a.kcal+x.kcal, B:a.B+x.B, T:a.T+x.T, W:a.W+x.W}),{kcal:0,B:0,T:0,W:0});
+  $('#tKcal').textContent = Math.round(t.kcal);
+  $('#tB').textContent = Math.round(t.B)+' g';
+  $('#tT').textContent = Math.round(t.T)+' g';
+  $('#tW').textContent = Math.round(t.W)+' g';
+  const tgt = +($('#target').value||0);
+  $('#tBar').style.width = tgt>0 ? Math.min(100, t.kcal/tgt*100)+'%' : '0%';
+}
+function renderList(){
+  const el = $('#list');
+  if(!log.length){ el.innerHTML='<div class="empty">Jeszcze nic nie dodano.</div>'; return; }
+  el.innerHTML = log.map((x,i)=>`
+    <div class="item">
+      <div class="info"><div class="nm">${esc(x.name)}</div>
+        <div class="sub">${x.grams} g · B ${Math.round(x.B)} / T ${Math.round(x.T)} / W ${Math.round(x.W)}</div></div>
+      <div class="kc">${Math.round(x.kcal)} kcal</div>
+      <button class="del" data-i="${i}">✕</button>
+    </div>`).join('');
+  el.querySelectorAll('.del').forEach(b=>b.onclick=()=>{ log.splice(+b.dataset.i,1); save(todayKey(),log); renderList(); renderTotals(); });
+}
+const esc = s => (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+$('#target').value = load('cal_target','');
+$('#target').oninput = ()=>{ save('cal_target',$('#target').value); renderTotals(); };
+$('#btnReset').onclick = ()=>{ if(confirm('Wyczyścić dzisiejszą listę?')){ log=[]; save(todayKey(),log); renderList(); renderTotals(); } };
+
+/* ---------- KOMUNIKATY ---------- */
+function msg(text,type='i'){ $('#msg').innerHTML = text ? `<div class="msg ${type}">${text}</div>` : ''; }
+
+/* ---------- OPEN FOOD FACTS ---------- */
+async function lookup(code){
+  code = (code||'').trim();
+  if(!/^\d{6,14}$/.test(code)){ msg('Nieprawidłowy kod EAN.','e'); return; }
+  if(cache[code]){ showProduct(code, cache[code]); return; }
+  msg('Szukam produktu…');
+  try{
+    const url = `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,product_name_pl,product_name_de,brands,nutriments,serving_quantity`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if(d.status !== 1 || !d.product){ msg(''); notFound(code); return; }
+    const n = d.product.nutriments||{};
+    let kcal = num(n['energy-kcal_100g']);
+    if(kcal==null && num(n['energy_100g'])!=null) kcal = num(n['energy_100g'])/4.184; // kJ→kcal
+    const p = {
+      name: d.product.product_name_pl || d.product.product_name || d.product.product_name_de || ('Produkt '+code),
+      brand: d.product.brands || '',
+      kcal: kcal ?? 0,
+      B: num(n['proteins_100g']) ?? 0,
+      T: num(n['fat_100g']) ?? 0,
+      W: num(n['carbohydrates_100g']) ?? 0,
+      serving: num(d.product.serving_quantity)
+    };
+    cache[code]=p; save('cal_products',cache);
+    msg('');
+    showProduct(code,p);
+  }catch(e){ msg('Brak połączenia z bazą. Sprawdź internet lub wpisz produkt ręcznie.','e'); notFound(code,true); }
+}
+const num = v => (v===0||v)&&!isNaN(+v) ? +v : null;
+
+/* ---------- PRODUKT NIEZNALEZIONY → ręczne dodanie ---------- */
+function notFound(code, soft){
+  const r=$('#result'); r.style.display='block';
+  r.innerHTML = `
+    <h3>Nie znaleziono w bazie</h3>
+    <div class="brand">Kod: ${code} — dodaj dane ręcznie (zapiszą się na przyszłość)</div>
+    <label>Nazwa</label><input id="mName" placeholder="np. Twarożek wiejski">
+    <div class="portion" style="margin-top:8px;">
+      <div class="f"><label>kcal / 100 g</label><input id="mKcal" type="number" inputmode="decimal"></div>
+      <div class="f"><label>B / 100 g</label><input id="mB" type="number" inputmode="decimal"></div>
+    </div>
+    <div class="portion" style="margin-top:8px;">
+      <div class="f"><label>T / 100 g</label><input id="mT" type="number" inputmode="decimal"></div>
+      <div class="f"><label>W / 100 g</label><input id="mW" type="number" inputmode="decimal"></div>
+    </div>
+    <button class="btn" id="mSave" style="margin-top:12px;">Zapisz produkt</button>`;
+  $('#mSave').onclick=()=>{
+    const p={name:$('#mName').value||('Produkt '+code), brand:'', kcal:+($('#mKcal').value||0),
+             B:+($('#mB').value||0), T:+($('#mT').value||0), W:+($('#mW').value||0), serving:null};
+    if(!p.kcal){ alert('Podaj przynajmniej kcal / 100 g'); return; }
+    cache[code]=p; save('cal_products',cache); showProduct(code,p);
+  };
+}
+
+/* ---------- KARTA PRODUKTU + PORCJA ---------- */
+function showProduct(code,p){
+  current={code,p};
+  const g0 = p.serving && p.serving>0 ? Math.round(p.serving) : 100;
+  const r=$('#result'); r.style.display='block';
+  r.innerHTML = `
+    <h3>${esc(p.name)}</h3>
+    <div class="brand">${esc(p.brand)||'—'} · kod ${code}</div>
+    <div class="nutri">
+      <div class="n"><b>${Math.round(p.kcal)}</b><span>kcal/100g</span></div>
+      <div class="n"><b>${r1(p.B)}</b><span>B</span></div>
+      <div class="n"><b>${r1(p.T)}</b><span>T</span></div>
+      <div class="n"><b>${r1(p.W)}</b><span>W</span></div>
+    </div>
+    <div class="portion">
+      <div class="f"><label>Porcja (g)</label><input id="grams" type="number" inputmode="decimal" value="${g0}"></div>
+    </div>
+    <div class="calc"><div class="big" id="cKcal">0 kcal</div><div class="sub" id="cMac"></div></div>
+    <button class="btn" id="add" style="margin-top:12px;">＋ Dodaj do dnia</button>`;
+  const upd=()=>{
+    const g=+($('#grams').value||0), f=g/100;
+    $('#cKcal').textContent = Math.round(p.kcal*f)+' kcal';
+    $('#cMac').textContent = `B ${r1(p.B*f)} · T ${r1(p.T*f)} · W ${r1(p.W*f)} (${g} g)`;
+  };
+  $('#grams').oninput=upd; upd();
+  $('#add').onclick=()=>{
+    const g=+($('#grams').value||0), f=g/100;
+    if(!g){ alert('Podaj wagę porcji'); return; }
+    log.push({name:p.name, grams:g, kcal:p.kcal*f, B:p.B*f, T:p.T*f, W:p.W*f});
+    save(todayKey(),log); renderList(); renderTotals();
+    r.style.display='none'; current=null;
+    msg('Dodano do licznika ✔');
+    setTimeout(()=>msg(''),1500);
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+}
+const r1 = v => (Math.round(v*10)/10)+' g';
+
+/* ---------- SKANOWANIE: KAMERA NA ŻYWO ---------- */
+const hasNative = 'BarcodeDetector' in window;
+const FORMATS = ['ean_13','ean_8','upc_a','upc_e'];
+let detector = hasNative ? new BarcodeDetector({formats:FORMATS}) : null;
+
+async function openCam(){
+  $('#modal').classList.add('on');
+  $('#camBanner').style.display='none';
+  // jeśli apka działa w oknie podglądu (iframe), kamera na żywo bywa blokowana
+  const inFrame = window.self !== window.top;
+  try{
+    if(hasNative){
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+      const v=$('#video'); v.srcObject=stream; await v.play();
+      watchdog();
+      scanNative();
+    }else if(window.ZXing){
+      zxing = new ZXing.BrowserMultiFormatReader();
+      zxScanning=true;
+      zxing.decodeFromVideoDevice(null, 'video', (res,err)=>{
+        if(res && zxScanning){ zxScanning=false; onCode(res.getText()); }
+      });
+      watchdog();
+    }else{
+      $('#camBanner').style.display='block';
+      if(!inFrame){ closeCam(); msg('Ta przeglądarka nie obsługuje skanera na żywo. Użyj „Zdjęcie kodu".','e'); }
+    }
+  }catch(e){
+    // kamera odrzucona / brak HTTPS / piaskownica → pokaż baner z alternatywą (zdjęcie)
+    $('#camBanner').style.display='block';
+  }
+}
+// jeśli po 3,5 s nie ma obrazu z kamery (czarny ekran), pokaż baner z alternatywą
+function watchdog(){
+  setTimeout(()=>{
+    if(!$('#modal').classList.contains('on')) return;
+    const v=$('#video');
+    if(!v.videoWidth || v.videoWidth===0){ $('#camBanner').style.display='block'; }
+  }, 3500);
+}
+async function scanNative(){
+  const v=$('#video');
+  if(!$('#modal').classList.contains('on')) return;
+  try{
+    const codes = await detector.detect(v);
+    if(codes.length){ onCode(codes[0].rawValue); return; }
+  }catch(e){}
+  requestAnimationFrame(scanNative);
+}
+function onCode(code){ closeCam(); lookup(code); }
+function closeCam(){
+  $('#modal').classList.remove('on');
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  if(zxing){ try{zxing.reset();}catch{} zxing=null; } zxScanning=false;
+}
+$('#btnCam').onclick=openCam;
+$('#btnClose').onclick=closeCam;
+// przycisk „Zrób zdjęcie kodu" w oknie kamery → zamyka podgląd i otwiera aparat/zdjęcie
+$('#btnCamPhoto').onclick=()=>{ closeCam(); $('#filePhoto').click(); };
+
+/* ---------- SKANOWANIE: ZE ZDJĘCIA ---------- */
+$('#btnPhoto').onclick=()=>$('#filePhoto').click();
+$('#filePhoto').onchange = async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  msg('Odczytuję kod ze zdjęcia…');
+  try{
+    if(hasNative){
+      const bmp=await createImageBitmap(file);
+      const codes=await detector.detect(bmp);
+      if(codes.length){ msg(''); lookup(codes[0].rawValue); return; }
+    }
+    if(window.ZXing){
+      const url=URL.createObjectURL(file);
+      const rd=new ZXing.BrowserMultiFormatReader();
+      const res=await rd.decodeFromImageUrl(url);
+      URL.revokeObjectURL(url);
+      if(res){ msg(''); lookup(res.getText()); return; }
+    }
+    msg('Nie odczytano kodu ze zdjęcia. Spróbuj z bliska lub wpisz ręcznie.','e');
+  }catch(err){ msg('Nie odczytano kodu ze zdjęcia. Spróbuj ostrzej lub wpisz ręcznie.','e'); }
+  e.target.value='';
+};
+
+/* ---------- RĘCZNIE ---------- */
+$('#btnMan').onclick=()=>lookup($('#manCode').value);
+$('#manCode').addEventListener('keydown',e=>{ if(e.key==='Enter') lookup($('#manCode').value); });
+
+renderList(); renderTotals();
+</script>
+</body>
+</html>
